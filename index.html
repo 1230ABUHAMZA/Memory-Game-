@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Memory Card Game</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #6dd5ed, #2193b0);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    h1 {
+      color: white;
+      margin-bottom: 10px;
+    }
+
+    #stats {
+      color: white;
+      font-size: 1.2rem;
+      margin-bottom: 20px;
+    }
+
+    .game-board {
+      width: 340px;
+      display: grid;
+      grid-template-columns: repeat(4, 80px);
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .card {
+      width: 80px;
+      height: 80px;
+      background-color: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.3s;
+    }
+
+    .card.flipped {
+      background-color: #00c9a7;
+      color: white;
+      transform: rotateY(180deg);
+    }
+
+    .card.matched {
+      background-color: #28a745;
+      color: white;
+      pointer-events: none;
+    }
+
+    #message {
+      color: yellow;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+
+    #restart-btn {
+      background-color: #28a745;
+      color: white;
+      padding: 10px 20px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 20px;
+      display: none;
+    }
+
+    #restart-btn:hover {
+      background-color: #218838;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🧠 Memory Card Game</h1>
+  <div id="stats">Chances left: <span id="chances">5</span></div>
+  <div class="game-board" id="board"></div>
+  <div id="message"></div>
+  <button id="restart-btn">Restart Game</button>
+
+  <script>
+    const emojis = ['🍕', '🎮', '🚀', '🐶', '🍩', '🎲', '🎧', '🍓'];
+    let cards = [...emojis, ...emojis];
+    cards.sort(() => 0.5 - Math.random());
+
+    const board = document.getElementById('board');
+    const chancesDisplay = document.getElementById('chances');
+    const messageDisplay = document.getElementById('message');
+    const restartBtn = document.getElementById('restart-btn');
+    let flipped = [];
+    let matched = [];
+    let chances = 5;
+
+    // Updated Sound Effects
+    const flipSound = new Audio('https://www.soundjay.com/button/beep-07.wav'); // Flip sound
+    const matchSound = new Audio('https://www.soundjay.com/button/beep-09.wav'); // Match sound
+    const gameOverSound = new Audio('https://www.soundjay.com/button/beep-10.wav'); // Game over sound
+    const winSound = new Audio('https://www.soundjay.com/button/beep-02.wav'); // Win sound
+
+    function createBoard() {
+      cards.forEach((emoji, index) => {
+        const card = document.createElement('div');
+        card.classList.add('card');
+        card.dataset.index = index;
+        card.dataset.emoji = emoji;
+        card.innerText = '';
+        card.addEventListener('click', flipCard);
+        board.appendChild(card);
+      });
+    }
+
+    function flipCard(e) {
+      const card = e.target;
+      const emoji = card.dataset.emoji;
+      const index = card.dataset.index;
+
+      if (flipped.length < 2 && !flipped.includes(index) && !card.classList.contains('matched')) {
+        card.classList.add('flipped');
+        card.innerText = emoji;
+        flipped.push(index);
+        flipSound.play();
+      }
+
+      if (flipped.length === 2) {
+        const [i1, i2] = flipped;
+        const c1 = document.querySelector(`.card[data-index='${i1}']`);
+        const c2 = document.querySelector(`.card[data-index='${i2}']`);
+
+        if (c1.dataset.emoji === c2.dataset.emoji) {
+          c1.classList.add('matched');
+          c2.classList.add('matched');
+          matched.push(i1, i2);
+          flipped = [];
+          matchSound.play();
+          checkWin();
+        } else {
+          chances--;
+          chancesDisplay.innerText = chances;
+          setTimeout(() => {
+            c1.classList.remove('flipped');
+            c2.classList.remove('flipped');
+            c1.innerText = '';
+            c2.innerText = '';
+            flipped = [];
+          }, 1000);
+          if (chances === 0) {
+            gameOverSound.play();
+            messageDisplay.innerText = '💥 Game Over! Try Again!';
+            restartBtn.style.display = 'block';
+            board.style.pointerEvents = 'none';
+          }
+        }
+      }
+    }
+
+    function checkWin() {
+      if (matched.length === cards.length) {
+        winSound.play();
+        messageDisplay.innerText = '🎉 You Won!';
+        restartBtn.style.display = 'block';
+        board.style.pointerEvents = 'none';
+      }
+    }
+
+    function restartGame() {
+      // Reset Game State
+      cards = [...emojis, ...emojis];
+      cards.sort(() => 0.5 - Math.random());
+      flipped = [];
+      matched = [];
+      chances = 5;
+      chancesDisplay.innerText = chances;
+      messageDisplay.innerText = '';
+      restartBtn.style.display = 'none';
+      board.innerHTML = '';
+      createBoard();
+      board.style.pointerEvents = 'auto';
+    }
+
+    // Event listener for the restart button
+    restartBtn.addEventListener('click', restartGame);
+
+    // Initialize Game
+    createBoard();
+  </script>
+
+</body>
+</html>
